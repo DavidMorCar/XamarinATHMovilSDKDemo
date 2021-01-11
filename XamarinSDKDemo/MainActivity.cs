@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Android.App;
 using Android.OS;
 using Android.Runtime;
@@ -6,6 +7,8 @@ using Android.Support.Design.Widget;
 using Android.Support.V7.App;
 using Android.Views;
 using Android.Widget;
+using Com.Evertecinc.Athmovil.Sdk.Checkout;
+using Com.Evertecinc.Athmovil.Sdk.Checkout.Objects;
 
 namespace XamarinSDKDemo
 {
@@ -17,43 +20,45 @@ namespace XamarinSDKDemo
             base.OnCreate(savedInstanceState);
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             SetContentView(Resource.Layout.activity_main);
-
-            Android.Support.V7.Widget.Toolbar toolbar = FindViewById<Android.Support.V7.Widget.Toolbar>(Resource.Id.toolbar);
-            SetSupportActionBar(toolbar);
-
-            FloatingActionButton fab = FindViewById<FloatingActionButton>(Resource.Id.fab);
-            fab.Click += FabOnClick;
+            Android.Support.V7.Widget.AppCompatImageButton button = FindViewById<Android.Support.V7.Widget.AppCompatImageButton>(Resource.Id.btnATHMCheckout);
+            button.Click += (sender, e) => {
+                onClickPayButton();
+            };
+            items.Add(new Items("Ssd", "(8oz)        ", (Java.Lang.Double)1.0, (Java.Lang.Long)2L, null));
+            items.Add(new Items("Coca Cola", "(68oz)", (Java.Lang.Double)0.75, (Java.Lang.Long)1L, "expiration 0820"));
         }
 
-        public override bool OnCreateOptionsMenu(IMenu menu)
+        List<Items> items = new List<Items>();
+
+        // Production functionality, provide correct data...
+        public void onClickPayButton()
         {
-            MenuInflater.Inflate(Resource.Menu.menu_main, menu);
-            return true;
+            ATHMPayment payment = new ATHMPayment(this);
+            payment.PublicToken= "933OH0Y08SFD7QEN2QJH6YD4RSKZZS7YAL0IUY0F";
+            payment.Total = 6;
+            payment.Metadata1 = "test";
+            payment.Metadata2 = "test2";
+            payment.CallbackSchema = "com.evertecinc.xamarinsdkdemo.ResponseActivity";
+            payment.Items = items;
+            payment.Subtotal = 5;
+            payment.Tax = 1;
+            payment.Timeout = 600;
+            payment.BuildType = ".qa";
+
+            sendData(payment);
         }
 
-        public override bool OnOptionsItemSelected(IMenuItem item)
+        private void sendData(ATHMPayment ATHMPayment)
         {
-            int id = item.ItemId;
-            if (id == Resource.Id.action_settings)
+            try
             {
-                return true;
+                OpenATHM.ValidateData(ATHMPayment);
+
             }
-
-            return base.OnOptionsItemSelected(item);
-        }
-
-        private void FabOnClick(object sender, EventArgs eventArgs)
-        {
-            View view = (View)sender;
-            Snackbar.Make(view, "Replace with your own action", Snackbar.LengthLong)
-                .SetAction("Action", (Android.Views.View.IOnClickListener)null).Show();
-        }
-
-        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
-        {
-            Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-
-            base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+            catch (Exception e)
+            {
+                Toast.MakeText(this, e.Message, ToastLength.Long).Show();
+            }
         }
     }
 }
